@@ -1,3 +1,17 @@
+# Fork Notes
+
+Forked from https://github.com/lukasmartinelli/pgfutter
+
+I made this fork primarily so that pgfutter would build: as of 19 JUL 2020, a couple of the imports had changed. Although *in theory* [Go modules with the same import path](https://blog.golang.org/v2-go-modules#TOC_2.) are supposed to follow "the import compatibility rule" - either this didn't happen with two modules? Or? (I don't claim to be a Go expert. I'm not really sure.)
+
+Long story short: I added the "go.mod" and "go.sum" files with versions that *appear* to work. I was able to at least run `go get github.com/danieldjewell/pgfutter` and have it build. 
+
+I also updated the travis-ci config -- `pgfutter` builds on Go 1.13 and 1.14 seemingly without issue. Go 1.12 and 1.11 have issues- not 100% sure what it is at this point although I believe it has to do with the GO111MODULE environment variable. (If you're using go 1.12 or 1.11 try running `GO111MODULE="on" go get ...` ) 
+
+-Daniel
+Last updated 2020-07-19
+
+
 # pgfutter [![Build Status](https://travis-ci.org/lukasmartinelli/pgfutter.svg?branch=master)](https://travis-ci.org/lukasmartinelli/pgfutter) [![Go Report Card](https://goreportcard.com/badge/github.com/lukasmartinelli/pgfutter)](https://goreportcard.com/report/github.com/lukasmartinelli/pgfutter) ![License](https://img.shields.io/badge/license-MIT%20License-blue.svg)
 
 <img align="right" alt="elephant" src="elephant.jpg" />
