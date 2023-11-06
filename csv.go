@@ -46,6 +46,7 @@ func parseColumns(reader *csv.Reader, skipHeader bool, fields string) ([]string,
 		if skipHeader {
 			reader.Read() //Force consume one row
 		}
+
 	} else {
 		columns, err = reader.Read()
 		fmt.Printf("%v columns\n%v\n", len(columns), columns)
@@ -69,6 +70,26 @@ func parseColumns(reader *csv.Reader, skipHeader bool, fields string) ([]string,
 	return columns, nil
 }
 
+func handleLineError(record []string, delimiter string, ignoreErrors bool, err error) error {
+
+	for i := range record {
+		fmt.Printf("%d %s\n", i, record[i])
+	}
+
+	line := strings.Join(record, delimiter)
+
+	if ignoreErrors {
+		fmt.Println(err)
+		fmt.Println(string(line))
+	} else {
+		fmt.Println(string(line))
+		err = fmt.Errorf("%s: %s", err, line)
+		return err
+	}
+	return nil
+
+}
+
 func copyCSVRows(i *Import, reader *csv.Reader, ignoreErrors bool,
 	delimiter string, columns []string, nullDelimiter string) (error, int, int) {
 	success := 0
@@ -83,39 +104,45 @@ func copyCSVRows(i *Import, reader *csv.Reader, ignoreErrors bool,
 		}
 
 		if err != nil {
-			line := strings.Join(record, delimiter)
 			failed++
-
-			if ignoreErrors {
-				os.Stderr.WriteString(string(line))
-				continue
-			} else {
-				err = fmt.Errorf("%s: %s", err, line)
+			err := handleLineError(record, delimiter, ignoreErrors, err)
+			if err != nil {
 				return err, success, failed
 			}
+			continue
 		}
 
+		maxlenght := len(columns)
 		//Loop ensures we don't insert too many values and that
 		//values are properly converted into empty interfaces
 		for i, col := range record {
+			if i >= maxlenght {
+				err = fmt.Errorf("too many columns in line %d > %d", maxlenght, i)
+				failed++
+				break
+			}
 			cols[i] = strings.Replace(col, "\x00", "", -1)
 			// bytes.Trim(b, "\x00")
 			// cols[i] = col
 		}
 
+		if err != nil {
+			err = handleLineError(record, delimiter, ignoreErrors, err)
+			if err != nil {
+				return err, success, failed
+			}
+			continue
+		}
+
 		err = i.AddRow(nullDelimiter, cols...)
 
 		if err != nil {
-			line := strings.Join(record, delimiter)
 			failed++
-
-			if ignoreErrors {
-				os.Stderr.WriteString(string(line))
-				continue
-			} else {
-				err = fmt.Errorf("%s: %s", err, line)
+			err := handleLineError(record, delimiter, ignoreErrors, err)
+			if err != nil {
 				return err, success, failed
 			}
+			continue
 		}
 
 		success++
@@ -186,10 +213,10 @@ func importCSV(filename string, connStr string, schema string, tableName string,
 		return fmt.Errorf("line %d: %s", lineNumber, err)
 	}
 
-	fmt.Println(fmt.Sprintf("%d rows imported into %s.%s", success, schema, tableName))
+	fmt.Printf("%d rows imported into %s.%s \n", success, schema, tableName)
 
 	if ignoreErrors && failed > 0 {
-		fmt.Println(fmt.Sprintf("%d rows could not be imported into %s.%s and have been written to stderr.", failed, schema, tableName))
+		fmt.Printf("%d rows could not be imported into %s.%s and have been written to stderr. \n", failed, schema, tableName)
 	}
 
 	return i.Commit()

@@ -9,21 +9,21 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/urfave/cli"
 	"github.com/kennygrant/sanitize"
+	"github.com/urfave/cli"
 )
 
-//tries to create the schema and ignores failures to do so.
-//versions after Postgres 9.3 support the "IF NOT EXISTS" sql syntax
+// tries to create the schema and ignores failures to do so.
+// versions after Postgres 9.3 support the "IF NOT EXISTS" sql syntax
 func tryCreateSchema(db *sql.DB, importSchema string) {
-	createSchema, err := db.Prepare(fmt.Sprintf("CREATE SCHEMA %s", importSchema))
+	createSchema, err := db.Prepare(fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", importSchema))
 
 	if err == nil {
 		createSchema.Exec()
 	}
 }
 
-//setup a database connection and create the import schema
+// setup a database connection and create the import schema
 func connect(connStr string, importSchema string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -39,7 +39,7 @@ func connect(connStr string, importSchema string) (*sql.DB, error) {
 	return db, nil
 }
 
-//Makes sure that a string is a valid PostgreSQL identifier
+// Makes sure that a string is a valid PostgreSQL identifier
 func postgresify(identifier string) string {
 	str := sanitize.BaseName(identifier)
 	str = strings.ToLower(identifier)
@@ -78,7 +78,7 @@ func postgresify(identifier string) string {
 	return str
 }
 
-//parse sql connection string from cli flags
+// parse sql connection string from cli flags
 func parseConnStr(c *cli.Context) string {
 	otherParams := "sslmode=disable connect_timeout=5"
 	if c.GlobalBool("ssl") {
@@ -94,7 +94,7 @@ func parseConnStr(c *cli.Context) string {
 	)
 }
 
-//create table with a single JSON or JSONB column data
+// create table with a single JSON or JSONB column data
 func createJSONTable(db *sql.DB, schema string, tableName string, column string, dataType string) (*sql.Stmt, error) {
 	fullyQualifiedTable := fmt.Sprintf("%s.%s", schema, tableName)
 	tableSchema := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s %s)", fullyQualifiedTable, column, dataType)
@@ -103,7 +103,7 @@ func createJSONTable(db *sql.DB, schema string, tableName string, column string,
 	return statement, err
 }
 
-//create table with TEXT columns
+// create table with TEXT columns
 func createTable(db *sql.DB, schema string, tableName string, columns []string) (*sql.Stmt, error) {
 	columnTypes := make([]string, len(columns))
 	for i, col := range columns {

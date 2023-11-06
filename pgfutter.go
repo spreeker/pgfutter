@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -43,7 +44,7 @@ func getDataType(c *cli.Context) string {
 func main() {
 	app := cli.NewApp()
 	app.Name = "pgfutter"
-	app.Version = "1.2"
+	app.Version = "1.2.1"
 	app.Usage = "Import JSON and CSV into PostgreSQL the easy way"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -92,12 +93,14 @@ func main() {
 			EnvVar: "DB_TABLE",
 		},
 		cli.BoolFlag{
-			Name:  "jsonb",
-			Usage: "use JSONB data type",
+			Name:   "jsonb",
+			Usage:  "use JSONB data type",
+			EnvVar: "JSONB",
 		},
 		cli.BoolFlag{
-			Name:  "ignore-errors",
-			Usage: "halt transaction on inconsistencies",
+			Name:   "ignore-errors",
+			Usage:  "halt transaction on inconsistencies",
+			EnvVar: "IGNORE_ERRORS",
 		},
 	}
 
@@ -110,7 +113,7 @@ func main() {
 
 				filename := c.Args().First()
 
-				ignoreErrors := c.GlobalBool("ignore-errors")
+				ignoreErrors := c.Bool("ignore-errors")
 				schema := c.GlobalString("schema")
 				tableName := parseTableName(c, filename)
 				dataType := getDataType(c)
@@ -156,7 +159,6 @@ func main() {
 
 				filename := c.Args().First()
 
-				ignoreErrors := c.GlobalBool("ignore-errors")
 				schema := c.GlobalString("schema")
 				tableName := parseTableName(c, filename)
 
@@ -167,11 +169,17 @@ func main() {
 				excel := c.Bool("excel")
 				delimiter := parseDelimiter(c.String("delimiter"), skipParseheader)
 				connStr := parseConnStr(c)
+				fmt.Println("woot")
+				ignoreErrors := c.GlobalBool("ignore-errors")
+				fmt.Println(ignoreErrors)
 				err := importCSV(filename, connStr, schema, tableName, ignoreErrors, skipHeader, fields, delimiter, excel, nullDelimiter)
 				return err
 			},
 		},
 	}
 
-	app.Run(os.Args)
+	err := app.Run(os.Args)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
